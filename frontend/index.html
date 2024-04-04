@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CUTCOIN</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/particles.js"></script>
+<style>
+  body {
+    font-family: 'Inter', sans-serif;
+  }
+  #particles-js {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: #f7f7f7;
+    top: 0;
+    left: 0;
+    z-index: -1;
+  }
+  .tab-content {
+    display: none;
+    min-height: 160px; /* Ensure consistent height between tabs */
+  }
+  .tab-content.active {
+    display: block;
+  }
+  .tab-button {
+    margin-right: 8px; /* Spacing between buttons */
+    padding: 6px 12px; /* Button padding */
+    cursor: pointer; /* Cursor pointer on hover */
+    border: none; /* Remove border */
+    background-color: transparent; /* Transparent background */
+    transition: color 0.3s, border-bottom 0.3s; /* Smooth transition for color and border */
+  }
+  .tab-button.active {
+    font-weight: 600;
+    color: #000;
+    border-bottom: 2px solid #000;
+    background-color: #f0f0f0; /* Slightly different background for active tab */
+  }
+</style>
+</head>
+<body>
+
+
+
+<div class="min-h-screen flex items-center justify-center">
+    
+  <div class="bg-white shadow-lg rounded-lg p-8" style="width: 100%; max-width: 600px;"> <!-- Ensure consistent width -->
+    <div id="particles-js"></div>
+    <h1 class="text-2xl font-semibold mb-6">CUTCOIN</h1>
+    <div class="mb-4">
+      <button class="tab-button active" onclick="changeTab('tab2')">GIVE CHANGE</button>
+      <button class="tab-button" onclick="changeTab('tab1')">ACCEPT CHANGE</button>
+    </div>
+    <div id="tab1" class="tab-content">
+      <input type="text" placeholder="token_id" class="border p-2 rounded w-full mb-4">
+      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Accept Change</button>
+    </div>
+    <div id="tab2" class="tab-content active">
+      <input type="text" placeholder="phone number" class="border p-2 rounded w-full mb-4">
+      <div class="input-container" style="position: relative; display: inline-block;">
+        <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%);">$</span>
+        <input type="text" id="amountInput" placeholder="0.00" class="border p-2 rounded w-full mb-4 pl-8" oninput="validateInput(this)" />
+      </div>
+      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Give Change</button>
+    </div>
+    <div class="flex justify-between mt-6">
+      <button class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Get Help</button>
+      <button class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">All Active Tokens</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  particlesJS.load('particles-js', 'https://cdn.jsdelivr.net/particles.js/2.0.0/particles.json', function() {
+    console.log('callback - particles.js config loaded');
+  });
+
+  function validateInput(input) {
+    let value = input.value.replace(/[^0-9.]/g, ""); // Remove any character that is not a number or a dot
+    const dotIndex = value.indexOf('.');
+
+    if (dotIndex !== -1) {
+        // If there's a dot, split the string at the dot, limit the decimal part to 2 digits
+        let intPart = value.substring(0, dotIndex);
+        let decimalPart = value.substring(dotIndex + 1, dotIndex + 3);
+
+        // If the user starts with a dot, add a '0' before it
+        if (intPart === "" && decimalPart !== "") {
+            intPart = "0";
+        }
+
+        value = intPart + '.' + decimalPart;
+    }
+
+    // Update the input value only if it has changed, to avoid losing the cursor position
+    if (input.value !== value) {
+        input.value = value;
+    }
+  };
+
+  function changeTab(tabName) {
+    var i, tabcontent, tabbuttons;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+      tabcontent[i].style.display = "none";
+    }
+    tabbuttons = document.getElementsByClassName("tab-button");
+    for (i = 0; i < tabbuttons.length; i++) {
+      tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
+    }
+    document.getElementById(tabName).style.display = "block";
+    event.currentTarget.className += " active";
+  }
+
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const buttons = document.querySelectorAll("button");
+    buttons.forEach(button => {
+      switch(button.textContent.trim()) {
+        case 'Give Change':
+          button.addEventListener("click", createToken);
+          break;
+        case 'Accept Change':
+          button.addEventListener("click", redeemToken);
+          break;
+        case 'Get Help':
+          button.addEventListener("click", textTechnician);
+          break;
+        case 'All Active Tokens':
+          button.addEventListener("click", availableTokens);
+          break;
+      }
+    });
+  });
+
+function createToken() {
+    const phoneNumber = document.querySelector("[placeholder='phone number']").value;
+    const changeAmount = document.querySelector("#amountInput").value;
+    const tuckshopId = "HostelB"; // Example tuckshop ID
+
+    fetch('/create_token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone_number: phoneNumber, change_amount: changeAmount, tuckshop_id: tuckshopId })
+    })
+    .then(response => response.json())
+    .then(data => console.log(data))
+    .catch(error => console.error('Error:', error));
+}
+
+function redeemToken() {
+    const tokenId = document.querySelector("[placeholder='token_id']").value;
+
+    fetch('/redeem_token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token_id: tokenId })
+    })
+    .then(response => response.json())
+    .then(data => console.log(data))
+    .catch(error => console.error('Error:', error));
+}
+
+function availableTokens() {
+    fetch('/available_tokens')
+    .then(response => response.json())
+    .then(data => {
+        const tokensDisplay = document.querySelector("#tokensDisplay");
+        tokensDisplay.innerHTML = ''; // Clear previous entries
+        data.available_tokens.forEach(token => {
+            tokensDisplay.innerHTML += `<div>Token ID: ${token.token_id}, Phone: ${token.token_info.phone_number}, Change: ${token.token_info.change_amount}</div>`;
+        });
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function textTechnician() {
+    fetch('/text_technician')
+    .then(response => response.json())
+    .then(data => console.log(data.message))
+    .catch(error => console.error('Error:', error));
+}
+</script>
+
+</body>
+</html>
