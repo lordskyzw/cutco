@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from pymongo import MongoClient
-import hashlib
+from utils import generate_token, store_token
 import datetime
 from chromastone import ChromaStone
 import logging
@@ -22,14 +22,10 @@ def create_token():
     phone_number = data.get('phone_number')
     change_amount = data.get('change_amount')
     tuckshop_id = data.get('tuckshop_id')  # Assuming tuckshop ID is provided in the request
+    current_time = datetime.datetime.now()
 
     # Generate the token
-    hasher = hashlib.sha256()
-    current_time = datetime.datetime.now()
-    token_string = f"{tuckshop_id}{phone_number}{change_amount}{current_time}"
-    hasher.update(token_string.encode('utf-8'))
-    token_id = hasher.hexdigest()
-
+    token_id = generate_token(tuckshop_id, phone_number, change_amount, current_time)
     # Token information
     token_info = {
         'date': current_time,
@@ -38,10 +34,11 @@ def create_token():
     }
 
     # Store token in DB
-    mongo.db.tokens.insert_one({'token_id': token_id, 'token_info': token_info})
-    logging.info(f'Token created: {token_id}')
-
-    return jsonify({'token_id': token_id}), 201
+    if store_token(token_id=token_id, token_info=token_info):
+        logging.info(f'Token created: {token_id}')
+        return jsonify({'token_id': token_id}), 201
+    else:
+        return "Internal Server Error",500
 
 @app.route('/redeem_token', methods=['POST'])
 def redeem_token():
