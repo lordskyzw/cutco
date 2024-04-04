@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from pymongo import MongoClient
-from utils import generate_token, store_token
+from utils import generate_token, store_token,  format_phone_number
 import datetime
 from chromastone import ChromaStone
 import logging
@@ -20,6 +20,9 @@ def create_token():
     # Extract data from the request
     data = request.json
     phone_number = data.get('phone_number')
+    phone_number = format_phone_number(phone_number=phone_number)
+    if phone_number=='invalid phone number':
+        return f'Error:{phone_number}', 300
     change_amount = data.get('change_amount')
     tuckshop_id = data.get('tuckshop_id')  # Assuming tuckshop ID is provided in the request
     current_time = datetime.datetime.now()
@@ -71,6 +74,6 @@ def available_tokens():
 @app.route('/text_technician', methods=['GET'])
 def text_technician():
     # Send SMS to technician
-    client.send_sms(source_number=tuckshop_id, destination_number=technician_number, message='Tuckshop machine needs maintenance')
+    client.send_sms(source_number=tuckshop_id, destination_number=technician_number, message='Tuckshop B machine needs maintenance')
 
     return jsonify({'message': 'Technician has been notified'}), 200
