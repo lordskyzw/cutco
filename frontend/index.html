@@ -6,7 +6,6 @@
 <title>CUTCOIN</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/particles.js"></script>
 <style>
   body {
     font-family: 'Inter', sans-serif;
@@ -21,7 +20,7 @@
   .tab-button {
     margin-right: 8px; /* Spacing between buttons */
     padding: 6px 12px; /* Button padding */
-    cursor: pointer; /* Cursor pointer on hover */
+    cursor: pointer; /* Cursor pointer on hover */d
     border: none; /* Remove border */
     background-color: transparent; /* Transparent background */
     transition: color 0.3s, border-bottom 0.3s; /* Smooth transition for color and border */
@@ -128,9 +127,9 @@
 function createToken() {
     const phoneNumber = document.querySelector("[placeholder='phone number']").value;
     const changeAmount = document.querySelector("#amountInput").value;
-    const tuckshopId = "HostelB"; // Example tuckshop ID
+    const tuckshopId = "B"; // Example tuckshop ID
 
-    fetch('/create_token', {
+    fetch('http://127.0.0.1:5000/create_token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone_number: phoneNumber, change_amount: changeAmount, tuckshop_id: tuckshopId })
@@ -143,7 +142,7 @@ function createToken() {
 function redeemToken() {
     const tokenId = document.querySelector("[placeholder='token_id']").value;
 
-    fetch('/redeem_token', {
+    fetch('http://127.0.0.1:5000/redeem_token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token_id: tokenId })
@@ -154,7 +153,7 @@ function redeemToken() {
 }
 
 function availableTokens() {
-    fetch('/available_tokens')
+    fetch('http://127.0.0.1:5000/available_tokens')
     .then(response => response.json())
     .then(data => {
         const tokensDisplay = document.querySelector("#tokensDisplay");
@@ -167,7 +166,7 @@ function availableTokens() {
 }
 
 function textTechnician() {
-    fetch('/text_technician')
+    fetch('http://127.0.0.1:5000/text_technician')
     .then(response => response.json())
     .then(data => console.log(data.message))
     .catch(error => console.error('Error:', error));

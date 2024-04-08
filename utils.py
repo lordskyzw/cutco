@@ -4,7 +4,9 @@ import os
 import re
 from datetime import datetime
 
-mongo = MongoClient(os.environ.get("MONGO_URI")) 
+mongo = MongoClient(host="mongodb://mongo:h2fEeAfhhgFdB4A3F63cdBeFC6Agga24@viaduct.proxy.rlwy.net:31054")
+db = mongo["cutcoin"]
+tokens_collection = db.tokens
 
 def generate_token(tuckshop_id, phone_number, change_amount, current_time):
     '''Returns a token with the following format XY-01-Bg where:
@@ -44,7 +46,7 @@ def generate_token(tuckshop_id, phone_number, change_amount, current_time):
 
 def store_token(token_id, token_info):
     try:
-        mongo.db.tokens.insert_one({'token_id': token_id, 'token_info': token_info})
+        tokens_collection.insert_one({'token_id': token_id, 'token_info': token_info})
         return True
     except Exception as e:
         return False

@@ -1,21 +1,35 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from pymongo import MongoClient
 from utils import generate_token, store_token,  format_phone_number
 import datetime
-from chromastone import ChromaStone
+from chromastone import Chromastone
 import logging
 import os
+import random
+import string
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+# Retrieve a random uppercase letter
+
 
 logging.basicConfig(level=logging.DEBUG)
 technician_number = os.environ.get("TECHNICIAN_NUMBER") 
 TUCKSHOP_ID = str(os.environ.get("TUCKSHOP_ID"))
-chromastone_api_key = str(os.environ.get("CHROMASTONE_API_KEY"))
+chromastone_api_key = os.environ.get("CHROMASTONE_API_KEY")
+
+mongo = MongoClient(host=os.environ.get("MONGO_URI"))
+db = mongo["cutcoin"]
+tokens_collection = db.tokens
 
 app = Flask(__name__)
+CORS(app)
 
-client = ChromaStone(chromastone_api_key)
-app.config["MONGO_URI"] = "mongodb://localhost:27017/tuckshopDB"
-mongo = MongoClient(app.config["MONGO_URI"]) 
+client = Chromastone(chromastone_api_key)
+
 
 @app.route('/create_token', methods=['POST'])
 def create_token():
@@ -30,6 +44,7 @@ def create_token():
     
     change_amount = data.get('change_amount')
     current_time = datetime.datetime.now()
+    logging.info(f'Creating token for {phone_number} with change amount of {change_amount} at {current_time}')
 
     # Generate the token
     token_id = generate_token(tuckshop_id=TUCKSHOP_ID, phone_number=phone_number, change_amount=change_amount, current_time=current_time)
@@ -38,11 +53,14 @@ def create_token():
         'date': current_time,
         'phone_number': phone_number,
         'change_amount': change_amount,
-        'tuckshop_id': TUCKSHOP_ID
+        'tuckshop_id': TUCKSHOP_ID,
+        'confirmation_key': random.choice(string.ascii_uppercase)
+
     }
+    logging.info(f'Token generated: {token_id}')
 
     if store_token(token_id=token_id, token_info=token_info):
-
+        client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nTokenID: {token_id}')
         logging.info(f'Token created: {token_id}')
         return jsonify({'token_id': token_id}), 201
     
@@ -53,15 +71,15 @@ def create_token():
 def redeem_token():
     token_id = request.json.get('token_id')
 
-    token_data = mongo.db.tokens.find_one({'token_id': token_id})
+    token_data = tokens_collection.find_one({'token_id': token_id})
 
     if token_data:
         
-        mongo.db.tokens.delete_one({'token_id': token_id})
+        tokens_collection.delete_one({'token_id': token_id})
 
         logging.info(f'Token redeemed: {token_id}')
 
-        client.send_sms(source_number=TUCKSHOP_ID, destination_number=token_data['token_info']['phone_number'], message=f'Your change of {token_data["token_info"]["change_amount"]} has been redeemed successfully')
+        client.send_sms(source_number="$cutcoin", destination_number=token_data['token_info']['phone_number'], message=f'Confirmation! Your change of ${token_data["token_info"]["change_amount"]}USD has been redeemed successfully')
 
         return jsonify({'message': 'Token used successfully', 'validated': True}), 200
     else:
@@ -74,7 +92,7 @@ def redeem_token():
 @app.route('/available_tokens', methods=['GET'])
 def available_tokens():
 
-    available_tokens = mongo.db.tokens.find({}, {'_id': 0, 'token_id': 1, 'token_info': 1})
+    available_tokens = tokens_collection.find({}, {'_id': 0, 'token_id': 1, 'token_info': 1})
 
     return jsonify({'available_tokens': list(available_tokens)}), 200
 
@@ -85,3 +103,7 @@ def text_technician():
     client.send_sms(source_number=TUCKSHOP_ID, destination_number=technician_number, message='Tuckshop B machine needs maintenance')
 
     return jsonify({'message': 'Technician has been notified'}), 200
+
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=5000, debug=True)
