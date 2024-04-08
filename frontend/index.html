@@ -48,6 +48,7 @@
     <div id="tab1" class="tab-content">
       <input type="text" placeholder="token_id" class="border p-2 rounded w-full mb-4">
       <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Accept Change</button>
+      <div id="confirmationKey" class="mt-4 text-green-500"></div> <!-- Element to display the confirmation key -->
     </div>
     <div id="tab2" class="tab-content active">
       <input type="text" placeholder="phone number" class="border p-2 rounded w-full mb-4">
@@ -148,8 +149,22 @@ function redeemToken() {
         body: JSON.stringify({ token_id: tokenId })
     })
     .then(response => response.json())
-    .then(data => console.log(data))
-    .catch(error => console.error('Error:', error));
+    .then(data => {
+        console.log(data);
+        if (data.validated) {
+            // Update the confirmationKey element with the confirmation key
+            document.getElementById('confirmationKey').innerText = `Confirmation Key: ${data.confirmation_key}`;
+        } else {
+            // Handle invalid token case
+            document.getElementById('confirmationKey').innerText = `Invalid Token`;
+            document.getElementById('confirmationKey').style.color = 'red';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('confirmationKey').innerText = 'Error redeeming token';
+        document.getElementById('confirmationKey').style.color = 'red';
+    });
 }
 
 function availableTokens() {

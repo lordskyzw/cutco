@@ -74,14 +74,16 @@ def redeem_token():
     token_data = tokens_collection.find_one({'token_id': token_id})
 
     if token_data:
+        # Extract the confirmation key from the token data
+        confirmation_key = token_data['token_info']['confirmation_key']
         
         tokens_collection.delete_one({'token_id': token_id})
 
         logging.info(f'Token redeemed: {token_id}')
 
-        client.send_sms(source_number="$cutcoin", destination_number=token_data['token_info']['phone_number'], message=f'Confirmation! Your change of ${token_data["token_info"]["change_amount"]}USD has been redeemed successfully')
+        client.send_sms(source_number="$cutcoin", destination_number=token_data['token_info']['phone_number'], message=f'Confirmation! Your change of ${token_data["token_info"]["change_amount"]}\n Show teller confirmation key {confirmation_key}')
 
-        return jsonify({'message': 'Token used successfully', 'validated': True}), 200
+        return jsonify({'message': 'Token used successfully', 'confirmation_key': confirmation_key, 'validated': True}), 200
     else:
 
         logging.info(f'Invalid token: {token_id}')
