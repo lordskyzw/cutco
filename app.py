@@ -42,7 +42,7 @@ def tx():
     if phone_number=='invalid phone number':
         return f'Error:{phone_number}', 300
     
-    change_amount = data.get('amount')
+    change_amount = float(data.get('amount'))
     current_time = datetime.datetime.now()
     logging.info(f'Creating token for {phone_number} with change amount of {change_amount} at {current_time}')
 
@@ -57,10 +57,11 @@ def tx():
         'confirmation_key': random.choice(string.ascii_uppercase),
         'type': 'credit',
     }
-    logging.info(f'Token generated: {token_id}')
+    logging.info(f'Token generated: {token_id}\n Token Info: {token_info}')
 
     store_token(token_id=token_id, token_info=token_info)
     new_balance = store_ledger(phone_number=phone_number, transaction=token_info)
+    logging.info(f"stored token and new balance is {new_balance}")
 
     if type(new_balance)==float:
         client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nNew cutcoin balance: ${new_balance} USD')
@@ -68,6 +69,7 @@ def tx():
         return jsonify({'tx_hash': token_id, 'tx_info': token_info, 'new_balance': new_balance}), 201
     
     else:
+        logging.info(f'new_balance is of type {type(new_balance)}')
         return "Internal Server Error",500
 
 @app.route('/use_change', methods=['POST'])
@@ -80,7 +82,7 @@ def redeem_token():
     if not, it should return an error message(insufficient balance)
     '''
     phone_number = request.json.get('phone_number')
-    amount = request.json.get('amount')
+    amount = float(request.json.get('amount'))
 
     # Find the balance from the ledgers collection so edit this line
     last_ledger_entry = get_last_ledger_entry(phone_number)

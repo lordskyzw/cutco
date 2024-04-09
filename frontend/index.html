@@ -54,7 +54,7 @@
         <span style="position: absolute; left: 10px; top: 35%; transform: translateY(-50%);">$</span>
         <input type="text" id="usechangeamountInput" placeholder="0.00" class="border p-2 rounded w-full mb-4 pl-8" oninput="validateInput(this)" />
       </div>
-      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Accept Change</button>
+      <button onclick="redeemToken()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Accept Change</button>
       <div id="confirmationKey" class="mt-4 text-green-500"></div> <!-- Element to display the confirmation key -->
     </div>
     <div id="tab2" class="tab-content active">
@@ -121,12 +121,6 @@
     const buttons = document.querySelectorAll("button");
     buttons.forEach(button => {
       switch(button.textContent.trim()) {
-        case 'Give Change':
-          button.addEventListener("click", createToken);
-          break;
-        case 'Accept Change':
-          button.addEventListener("click", redeemToken);
-          break;
         case 'Get Help':
           button.addEventListener("click", textTechnician);
           break;
