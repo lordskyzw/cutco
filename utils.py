@@ -54,6 +54,13 @@ def store_token(token_id, token_info):
         return True
     except Exception as e:
         return False
+
+def remove_token(token_id):
+    try:
+        tokens_collection.delete({'token_id': token_id})
+        return True
+    except Exception as e:
+        return False
     
 def store_ledger(phone_number, transaction):
     """

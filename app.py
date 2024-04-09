@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
-from utils import generate_token, store_token, store_ledger, get_last_ledger_entry, format_phone_number
+from utils import generate_token, store_token, remove_token, store_ledger, get_last_ledger_entry, format_phone_number
 import datetime
 from chromastone import Chromastone
 import logging
@@ -95,7 +95,7 @@ def redeem_token():
             new_balance = updated_ledger['balance'] if updated_ledger else "Error retrieving new balance"
 
             # Delete the token since it's redeemed
-            tokens_collection.delete_one({'token_id': token_id})
+            remove_token(token_id)
             
             logging.info(f'Token redeemed: {token_id}')
             logging.info(f'new ledger balance: {new_balance}')
