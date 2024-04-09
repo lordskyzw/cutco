@@ -62,8 +62,7 @@
         <input id="phonePrefix" type="text" value="263" readonly class="border-none bg-transparent focus:outline-none" style="width: 40px;">
         <input id="userPhoneNumber" type="tel" placeholder="phone number" class="flex-1 border-none focus:ring-0" oninput="validatePhoneNumber(this)">
       </div>
-      <!-- Make sure the ID 'amountInput' is unique across all tabs -->
-      <input type="text" id="amountInput" placeholder="Amount" class="border p-2 rounded w-full mb-4">
+      <input type="text" id="amountInput" placeholder="0.00" class="border p-2 rounded w-full mb-4 pl-8" oninput="validateInput(this)" />
       <button onclick="createToken()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Give Change</button>
     </div>
     <div class="flex justify-between mt-6">
@@ -133,7 +132,7 @@ function createToken() {
   fetch('http://127.0.0.1:5000/tx', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({phone_number: phoneNumber, amount: changeAmount})
+      body: JSON.stringify({phone_number: phoneNumber, amount: changeAmount, transaction_type: 'deposit'})
   })
   .then(response => response.json())
   .then(data => console.log(data))
@@ -145,10 +144,10 @@ function redeemToken() {
     const phoneNumber = document.querySelector("#acceptphonenumber").value;
     const amount = document.querySelector("#usechangeamountInput").value;
 
-    fetch('http://127.0.0.1:5000/use_change', {
+    fetch('http://127.0.0.1:5000/tx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone_number: phoneNumber, amount: amount})
+        body: JSON.stringify({ phone_number: phoneNumber, amount: amount, transaction_type: 'withdrawal'})
     })
     .then(response => response.json())
     .then(data => {
