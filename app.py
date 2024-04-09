@@ -35,7 +35,7 @@ def tx():
     # Extract data from the request
     data = request.json
     logging.info(f'Received data: {data}')
-    phone_number = int(data.get('phone_number'))
+    phone_number = data.get('phone_number')
 
     phone_number = format_phone_number(phone_number=phone_number)
 
