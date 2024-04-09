@@ -10,6 +10,7 @@ load_dotenv()
 mongo = MongoClient(host=os.environ.get("MONGO_URI"))
 db = mongo["cutcoin"]
 tokens_collection = db.tokens
+ledgers_collection = db.ledgers
 
 def generate_token(tuckshop_id, phone_number, change_amount, current_time):
     '''Returns a token with the following format XY-01-Bg where:
@@ -53,6 +54,42 @@ def store_token(token_id, token_info):
         return True
     except Exception as e:
         return False
+    
+def store_ledger(phone_number, transaction):
+    """
+    Update the ledger for a given phone number by adding a new transaction.
+    If the ledger doesn't exist, create a new one.
+    """
+    try:
+
+        query = {'phone_number': phone_number}
+
+        update = {
+            '$push': {'transactions': transaction},
+            '$inc': {'balance': transaction['change_amount'] if transaction['type'] == 'credit' else -transaction['change_amount']}
+        }
+   
+        result = ledgers_collection.update_one(query, update, upsert=True)
+
+        if result.matched_count > 0 or result.upserted_id is not None:
+            return True
+        else:
+            return False
+    except Exception as e:
+        return False
+
+    
+def get_last_ledger_entry(phone_number):
+    try:
+        # Retrieve the ledger document for the given phone number
+        ledger_entry = ledgers_collection.find_one({'phone_number': phone_number})
+
+        # Return the whole ledger entry as it contains the balance and all transactions
+        return ledger_entry
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None  # It's better to return None than False to distinguish between an error and a missing entry
+
     
 def format_phone_number(phone_number):
     '''

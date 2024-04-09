@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
-from utils import generate_token, store_token,  format_phone_number
+from utils import generate_token, store_token, store_ledger, get_last_ledger_entry, format_phone_number
 import datetime
 from chromastone import Chromastone
 import logging
@@ -53,12 +53,13 @@ def create_token():
         'phone_number': phone_number,
         'change_amount': change_amount,
         'tuckshop_id': TUCKSHOP_ID,
-        'confirmation_key': random.choice(string.ascii_uppercase)
+        'confirmation_key': random.choice(string.ascii_uppercase),
+        'type': 'credit'
 
     }
     logging.info(f'Token generated: {token_id}')
 
-    if store_token(token_id=token_id, token_info=token_info):
+    if store_token(token_id=token_id, token_info=token_info) and store_ledger(phone_number=phone_number, transaction=token_info):
         client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nTokenID: {token_id}')
         logging.info(f'Token created: {token_id}')
         return jsonify({'token_id': token_id}), 201
@@ -70,24 +71,48 @@ def create_token():
 def redeem_token():
     token_id = request.json.get('token_id')
 
+    # Find the token data
     token_data = tokens_collection.find_one({'token_id': token_id})
 
     if token_data:
-        # Extract the confirmation key from the token data
+        phone_number = token_data['token_info']['phone_number']
+        change_amount = token_data['token_info']['change_amount']
         confirmation_key = token_data['token_info']['confirmation_key']
-        
-        tokens_collection.delete_one({'token_id': token_id})
 
-        logging.info(f'Token redeemed: {token_id}')
+        # Prepare the debit transaction for the ledger
+        debit_transaction = {
+            'token_id': token_id,
+            'date': datetime.datetime.now(),
+            'amount': change_amount,  # Assuming change_amount is positive
+            'type': 'debit',
+            'description': 'Redeemed change'
+        }
 
-        client.send_sms(source_number="$cutcoin", destination_number=token_data['token_info']['phone_number'], message=f'Confirmation! Your change of ${token_data["token_info"]["change_amount"]}\n Show teller confirmation key {confirmation_key}')
+        # Update the user's ledger with the debit transaction
+        if store_ledger(phone_number, debit_transaction):
+            # Retrieve the updated ledger to get the new balance
+            updated_ledger = get_last_ledger_entry(phone_number)
+            new_balance = updated_ledger['balance'] if updated_ledger else "Error retrieving new balance"
 
-        return jsonify({'message': 'Token used successfully', 'confirmation_key': confirmation_key, 'validated': True}), 200
+            # Delete the token since it's redeemed
+            tokens_collection.delete_one({'token_id': token_id})
+            
+            logging.info(f'Token redeemed: {token_id}')
+            logging.info(f'new ledger balance: {new_balance}')
+            
+            # Send confirmation SMS with the new balance
+            client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'Your change of ${change_amount}USD has been redeemed successfully.\nNew cutcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
+            
+            # Include the new balance in the JSON response
+            return jsonify({'message': 'Token used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
+        else:
+            return jsonify({'message': 'Failed to update ledger', 'validated': False}), 500
+
     else:
-
         logging.info(f'Invalid token: {token_id}')
-       
         return jsonify({'message': 'Invalid token', 'validated': False}), 400
+
+
 
 
 @app.route('/available_tokens', methods=['GET'])
