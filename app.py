@@ -112,7 +112,7 @@ def redeem_token():
     client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew cutcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
     
     # Include the new balance in the JSON response
-    return jsonify({'message': 'Token used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
+    return jsonify({'message': f'Change of ${amount} USD used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
 
    
 
