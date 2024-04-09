@@ -13,13 +13,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Retrieve a random uppercase letter
-
 
 logging.basicConfig(level=logging.DEBUG)
 technician_number = os.environ.get("TECHNICIAN_NUMBER") 
 TUCKSHOP_ID = str(os.environ.get("TUCKSHOP_ID"))
 chromastone_api_key = os.environ.get("CHROMASTONE_API_KEY")
+
 
 mongo = MongoClient(host=os.environ.get("MONGO_URI"))
 db = mongo["cutcoin"]

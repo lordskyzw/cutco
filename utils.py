@@ -3,8 +3,11 @@ from pymongo import MongoClient
 import os
 import re
 from datetime import datetime
+from dotenv import load_dotenv
 
-mongo = MongoClient(host="mongodb://mongo:h2fEeAfhhgFdB4A3F63cdBeFC6Agga24@viaduct.proxy.rlwy.net:31054")
+load_dotenv()
+
+mongo = MongoClient(host=os.environ.get("MONGO_URI"))
 db = mongo["cutcoin"]
 tokens_collection = db.tokens
 
