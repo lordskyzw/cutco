@@ -36,41 +36,82 @@ def tx():
     data = request.json
     logging.info(f'Received data: {data}')
     phone_number = data.get('phone_number')
+    transaction_type = data.get('transaction_type')
+
 
     phone_number = format_phone_number(phone_number=phone_number)
+    if transaction_type == 'deposit':
 
-    if phone_number=='invalid phone number':
-        return f'Error:{phone_number}', 300
+        if phone_number=='invalid phone number':
+            return f'Error:{phone_number}', 300
+        
+        change_amount = float(data.get('amount'))
+        current_time = datetime.datetime.now()
+        logging.info(f'Creating token for {phone_number} with change amount of {change_amount} at {current_time}')
+
     
-    change_amount = float(data.get('amount'))
-    current_time = datetime.datetime.now()
-    logging.info(f'Creating token for {phone_number} with change amount of {change_amount} at {current_time}')
+        # Generate the token
+        token_id = generate_token(tuckshop_id=TUCKSHOP_ID, phone_number=phone_number, change_amount=change_amount, current_time=current_time)
+    
+        token_info = {
+            'token_id': token_id,
+            'date': current_time,
+            'change_amount': change_amount,
+            'tuckshop_id': TUCKSHOP_ID,
+            'confirmation_key': random.choice(string.ascii_uppercase),
+            'type': 'credit',
+        }
+        logging.info(f'Token generated: {token_id}\n Token Info: {token_info}')
 
-    # Generate the token
-    token_id = generate_token(tuckshop_id=TUCKSHOP_ID, phone_number=phone_number, change_amount=change_amount, current_time=current_time)
-  
-    token_info = {
-        'token_id': token_id,
-        'date': current_time,
-        'change_amount': change_amount,
-        'tuckshop_id': TUCKSHOP_ID,
-        'confirmation_key': random.choice(string.ascii_uppercase),
-        'type': 'credit',
-    }
-    logging.info(f'Token generated: {token_id}\n Token Info: {token_info}')
+        store_token(token_id=token_id, token_info=token_info)
+        new_balance = store_ledger(phone_number=phone_number, transaction=token_info)
+        logging.info(f"stored token and new balance is {new_balance}")
 
-    store_token(token_id=token_id, token_info=token_info)
-    new_balance = store_ledger(phone_number=phone_number, transaction=token_info)
-    logging.info(f"stored token and new balance is {new_balance}")
+        if type(new_balance)==float:
+            client.send_sms(source_number="CUTCoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nNew cutcoin balance: ${new_balance} USD')
+            logging.info(f'Token created: {token_id}')
+            return jsonify({'tx_hash': token_id, 'tx_info': token_info, 'new_balance': new_balance}), 201
+        
+        else:
+            logging.info(f'new_balance is of type {type(new_balance)}')
+            return "Internal Server Error",500
+        
+    elif transaction_type == 'withdrawal':
+        amount = float(request.json.get('amount'))
+        # Find the balance from the ledgers collection so edit this line
+        last_ledger_entry = get_last_ledger_entry(phone_number)
+        old_balance = last_ledger_entry['balance']
 
-    if type(new_balance)==float:
-        client.send_sms(source_number="CUTCoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nNew cutcoin balance: ${new_balance} USD')
-        logging.info(f'Token created: {token_id}')
-        return jsonify({'tx_hash': token_id, 'tx_info': token_info, 'new_balance': new_balance}), 201
+        if old_balance < amount:
+            logging.info(f'Insufficient balance: {old_balance}')
+            return jsonify({'message': 'Insufficient balance', 'validated': False}), 400
+
+        token_id = last_ledger_entry['transactions'][-1]['token_id']
+        confirmation_key = random.choice(string.ascii_uppercase)
+        # Prepare the debit transaction for the ledger
+        debit_transaction = {
+            'destroyed_token_id': token_id,
+            'confirmation_key': confirmation_key,
+            'date': datetime.datetime.now(),
+            'amount': amount,  # amount is positive store_ledger will handle the sign
+            'type': 'debit',
+            'description': f'Redeemed change of ${amount} USD'
+        }
+
+        new_balance = store_ledger(phone_number, debit_transaction)
+
+        logging.info(f'new ledger balance: {new_balance}')
+        
+        # Send confirmation SMS with the new balance
+        client.send_sms(source_number="CUTCoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew cutcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
+        
+        # Include the new balance in the JSON response
+        return jsonify({'message': f'Change of ${amount} USD used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
     
     else:
-        logging.info(f'new_balance is of type {type(new_balance)}')
-        return "Internal Server Error",500
+        logging.error(f'invalid or missing transaction type')
+        return jsonify({'message': f'invalid or missing transaction type: deposit or withdrawal'})
+
 
 @app.route('/use_change', methods=['POST'])
 def redeem_token():
