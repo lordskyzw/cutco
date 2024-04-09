@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
-from utils import generate_token, store_token, remove_token, store_ledger, get_last_ledger_entry, format_phone_number
+from utils import generate_token, store_token, remove_token, store_ledger, get_last_ledger_entry, format_phone_number, token_info
 import datetime
 from chromastone import Chromastone
 import logging
@@ -30,8 +30,8 @@ CORS(app)
 client = Chromastone(chromastone_api_key)
 
 
-@app.route('/create_token', methods=['POST'])
-def create_token():
+@app.route('/tx', methods=['POST'])
+def tx():
     # Extract data from the request
     data = request.json
     phone_number = data.get('phone_number')
@@ -64,12 +64,12 @@ def create_token():
     if type(new_balance)==float:
         client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nNew cutcoin balance: ${new_balance} USD')
         logging.info(f'Token created: {token_id}')
-        return jsonify({'token_id': token_id}), 201
+        return jsonify({'tx_hash': token_id, 'tx_info': token_info, 'new_balance': new_balance}), 201
     
     else:
         return "Internal Server Error",500
 
-@app.route('/redeem_token', methods=['POST'])
+@app.route('/use_change', methods=['POST'])
 def redeem_token():
     '''
     this endpoint should first check if the user has enough balance to redeem the amount provided here is how it does it:
@@ -90,7 +90,6 @@ def redeem_token():
         return jsonify({'message': 'Insufficient balance', 'validated': False}), 400
 
     token_id = last_ledger_entry['transactions'][-1]['token_id']
-    remove_token(token_id)
     confirmation_key = random.choice(string.ascii_uppercase)
     # Prepare the debit transaction for the ledger
     debit_transaction = {
@@ -123,6 +122,14 @@ def available_tokens():
     available_tokens = tokens_collection.find({}, {'_id': 0, 'token_id': 1, 'token_info': 1})
 
     return jsonify({'available_tokens': list(available_tokens)}), 200
+
+@app.route('/get_tx', methods=['POST'])
+def get_tx():
+    data = request.json
+    tx_hash = data.get('tx_hash')
+
+    transaction = token_info(token_id=tx_hash)
+    return jsonify(transaction), 200
 
 
 @app.route('/text_technician', methods=['GET'])

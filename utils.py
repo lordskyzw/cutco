@@ -124,3 +124,29 @@ def format_phone_number(phone_number):
     # If none of the above, return the original phone number or handle as error
     else:
         return "invalid phone number"
+    
+def token_info(token_id):
+    """
+    Retrieves information about a token given its token_id.
+
+    Parameters:
+    - token_id (str): The unique identifier for the token.
+
+    Returns:
+    - A dictionary containing the token information if found, otherwise None.
+    """
+    try:
+        # Query the tokens collection for the token with the given token_id
+        token_data = tokens_collection.find_one({'token_id': token_id})
+
+        # Check if the token was found
+        if token_data:
+            # Return the token information
+            return token_data
+        else:
+            # Token not found
+            print(f"No token found with ID: {token_id}")
+            return None
+    except Exception as e:
+        print(f"An error occurred while retrieving token info: {e}")
+        return None

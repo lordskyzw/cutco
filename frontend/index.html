@@ -144,7 +144,7 @@ function createToken() {
     const changeAmount = document.querySelector("#amountInput").value;
    
 
-    fetch('http://127.0.0.1:5000/create_token', {
+    fetch('http://127.0.0.1:5000/tx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone_number: phoneNumber, change_amount: changeAmount, tuckshop_id: tuckshopId })
@@ -158,7 +158,7 @@ function redeemToken() {
     const phoneNumber = document.querySelector("#acceptphonenumber").value;
     const amount = document.querySelector("#usechangeamountInput").value;
 
-    fetch('http://127.0.0.1:5000/redeem_token', {
+    fetch('http://127.0.0.1:5000/use_change', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone_number: phoneNumber, amount: amount})
