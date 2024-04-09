@@ -64,7 +64,7 @@ def tx():
     logging.info(f"stored token and new balance is {new_balance}")
 
     if type(new_balance)==float:
-        client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nNew cutcoin balance: ${new_balance} USD')
+        client.send_sms(source_number="CUTCoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nNew cutcoin balance: ${new_balance} USD')
         logging.info(f'Token created: {token_id}')
         return jsonify({'tx_hash': token_id, 'tx_info': token_info, 'new_balance': new_balance}), 201
     
@@ -109,7 +109,7 @@ def redeem_token():
     logging.info(f'new ledger balance: {new_balance}')
     
     # Send confirmation SMS with the new balance
-    client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew cutcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
+    client.send_sms(source_number="CUTCoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew cutcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
     
     # Include the new balance in the JSON response
     return jsonify({'message': 'Token used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
