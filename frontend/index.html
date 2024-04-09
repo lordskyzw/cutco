@@ -67,8 +67,8 @@
       <button onclick="createToken()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Give Change</button>
     </div>
     <div class="flex justify-between mt-6">
-      <button class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Get Help</button>
-      <button class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">All Active Tokens</button>
+      <button onclick="textTechnician()" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Get Help</button>
+      <button onclick="availableTokens()" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">All Active Tokens</button>
     </div>
   </div>
 </div>
@@ -116,20 +116,6 @@
     event.currentTarget.className += " active";
   }
 
-
-  document.addEventListener('DOMContentLoaded', function() {
-    const buttons = document.querySelectorAll("button");
-    buttons.forEach(button => {
-      switch(button.textContent.trim()) {
-        case 'Get Help':
-          button.addEventListener("click", textTechnician);
-          break;
-        case 'All Active Tokens':
-          button.addEventListener("click", availableTokens);
-          break;
-      }
-    });
-  });
 
 function createToken() {
   // Retrieve the '263' prefix from the input field with ID 'phonePrefix'
