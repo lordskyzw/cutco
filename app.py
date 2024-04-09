@@ -34,14 +34,15 @@ client = Chromastone(chromastone_api_key)
 def tx():
     # Extract data from the request
     data = request.json
-    phone_number = data.get('phone_number')
+    logging.info(f'Received data: {data}')
+    phone_number = int(data.get('phone_number'))
 
     phone_number = format_phone_number(phone_number=phone_number)
 
     if phone_number=='invalid phone number':
         return f'Error:{phone_number}', 300
     
-    change_amount = data.get('change_amount')
+    change_amount = data.get('amount')
     current_time = datetime.datetime.now()
     logging.info(f'Creating token for {phone_number} with change amount of {change_amount} at {current_time}')
 

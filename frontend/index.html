@@ -59,14 +59,12 @@
     </div>
     <div id="tab2" class="tab-content active">
       <div class="phone-input-container flex items-center border p-2 rounded w-full mb-4">
-        <input type="text" value="263" readonly class="border-none bg-transparent focus:outline-none" style="width: 40px;">
-        <input type="tel" placeholder="phone number" class="flex-1 border-none focus:ring-0" oninput="validatePhoneNumber(this)">
+        <input id="phonePrefix" type="text" value="263" readonly class="border-none bg-transparent focus:outline-none" style="width: 40px;">
+        <input id="userPhoneNumber" type="tel" placeholder="phone number" class="flex-1 border-none focus:ring-0" oninput="validatePhoneNumber(this)">
       </div>
-      <div class="input-container" style="position: relative; display: inline-block;">
-        <span style="position: absolute; left: 10px; top: 35%; transform: translateY(-50%);">$</span>
-        <input type="text" id="amountInput" placeholder="0.00" class="border p-2 rounded w-full mb-4 pl-8" oninput="validateInput(this)" />
-      </div>
-      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Give Change</button>
+      <!-- Make sure the ID 'amountInput' is unique across all tabs -->
+      <input type="text" id="amountInput" placeholder="Amount" class="border p-2 rounded w-full mb-4">
+      <button onclick="createToken()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Give Change</button>
     </div>
     <div class="flex justify-between mt-6">
       <button class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Get Help</button>
@@ -140,19 +138,28 @@
   });
 
 function createToken() {
-    const phoneNumber = document.querySelector("[placeholder='phone number']").value;
-    const changeAmount = document.querySelector("#amountInput").value;
-   
+  // Retrieve the '263' prefix from the input field with ID 'phonePrefix'
+  const prefix = document.getElementById("phonePrefix").value;
 
-    fetch('http://127.0.0.1:5000/tx', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone_number: phoneNumber, change_amount: changeAmount, tuckshop_id: tuckshopId })
-    })
-    .then(response => response.json())
-    .then(data => console.log(data))
-    .catch(error => console.error('Error:', error));
+  // Retrieve the user-entered phone number from the input field with ID 'userPhoneNumber'
+  const phoneNumberSuffix = document.getElementById("userPhoneNumber").value;
+
+  // Concatenate the prefix and the user-entered part to form the complete phone number
+  const phoneNumber = prefix + phoneNumberSuffix;
+
+  // Retrieve the change amount from the input field with ID 'amountInput'
+  const changeAmount = document.getElementById("amountInput").value;
+
+  fetch('http://127.0.0.1:5000/tx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({phone_number: phoneNumber, amount: changeAmount})
+  })
+  .then(response => response.json())
+  .then(data => console.log(data))
+  .catch(error => console.error('Error:', error));
 }
+
 
 function redeemToken() {
     const phoneNumber = document.querySelector("#acceptphonenumber").value;
