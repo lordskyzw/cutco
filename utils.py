@@ -64,26 +64,31 @@ def remove_token(token_id):
     
 def store_ledger(phone_number, transaction):
     """
-    Update the ledger for a given phone number by adding a new transaction.
-    If the ledger doesn't exist, create a new one.
+    Update the ledger for a given phone number by adding a new transaction and adjusting the balance.
+    If the ledger doesn't exist, create a new one. Returns the new balance after the update.
     """
     try:
-
         query = {'phone_number': phone_number}
-
         update = {
             '$push': {'transactions': transaction},
-            '$inc': {'balance': transaction['change_amount'] if transaction['type'] == 'credit' else -transaction['change_amount']}
+            '$inc': {'balance': transaction['change_amount'] if transaction['type'] == 'credit' else -transaction['amount']}
         }
-   
+
+        # Perform the update operation
         result = ledgers_collection.update_one(query, update, upsert=True)
 
         if result.matched_count > 0 or result.upserted_id is not None:
-            return True
+            # If the ledger was successfully updated or created, retrieve the updated ledger to get the new balance
+            updated_ledger = ledgers_collection.find_one(query)
+            if updated_ledger:
+                return float(updated_ledger['balance'])  # Return the new balance
+            else:
+                return "Error retrieving updated ledger"  # Handle potential error in retrieving the updated ledger
         else:
-            return False
+            return "Update operation failed"  # Handle case where update operation didn't affect any documents
     except Exception as e:
-        return False
+        return f"An error occurred: {e}"  # Return the error message
+
 
     
 def get_last_ledger_entry(phone_number):

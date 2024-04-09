@@ -49,18 +49,20 @@ def create_token():
     token_id = generate_token(tuckshop_id=TUCKSHOP_ID, phone_number=phone_number, change_amount=change_amount, current_time=current_time)
   
     token_info = {
+        'token_id': token_id,
         'date': current_time,
-        'phone_number': phone_number,
         'change_amount': change_amount,
         'tuckshop_id': TUCKSHOP_ID,
         'confirmation_key': random.choice(string.ascii_uppercase),
-        'type': 'credit'
-
+        'type': 'credit',
     }
     logging.info(f'Token generated: {token_id}')
 
-    if store_token(token_id=token_id, token_info=token_info) and store_ledger(phone_number=phone_number, transaction=token_info):
-        client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nTokenID: {token_id}')
+    store_token(token_id=token_id, token_info=token_info)
+    new_balance = store_ledger(phone_number=phone_number, transaction=token_info)
+
+    if type(new_balance)==float:
+        client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nNew cutcoin balance: ${new_balance} USD')
         logging.info(f'Token created: {token_id}')
         return jsonify({'token_id': token_id}), 201
     
@@ -69,48 +71,48 @@ def create_token():
 
 @app.route('/redeem_token', methods=['POST'])
 def redeem_token():
-    token_id = request.json.get('token_id')
+    '''
+    this endpoint should first check if the user has enough balance to redeem the amount provided here is how it does it:
+    1) by checking the balance from the users mongo ledgers collection  (search by phone number)
+    2) it compares the balance with the amount provided in the request if the balance is greater
+    if so, it proceeds to deduct from the users balance (perfom the debit_transaction) and delete the token (token_id should be found in the ledger document)
+    if not, it should return an error message(insufficient balance)
+    '''
+    phone_number = request.json.get('phone_number')
+    amount = request.json.get('amount')
 
-    # Find the token data
-    token_data = tokens_collection.find_one({'token_id': token_id})
+    # Find the balance from the ledgers collection so edit this line
+    last_ledger_entry = get_last_ledger_entry(phone_number)
+    old_balance = last_ledger_entry['balance']
 
-    if token_data:
-        phone_number = token_data['token_info']['phone_number']
-        change_amount = token_data['token_info']['change_amount']
-        confirmation_key = token_data['token_info']['confirmation_key']
+    if old_balance < amount:
+        logging.info(f'Insufficient balance: {old_balance}')
+        return jsonify({'message': 'Insufficient balance', 'validated': False}), 400
 
-        # Prepare the debit transaction for the ledger
-        debit_transaction = {
-            'token_id': token_id,
-            'date': datetime.datetime.now(),
-            'amount': change_amount,  # Assuming change_amount is positive
-            'type': 'debit',
-            'description': 'Redeemed change'
-        }
+    token_id = last_ledger_entry['transactions'][-1]['token_id']
+    remove_token(token_id)
+    confirmation_key = random.choice(string.ascii_uppercase)
+    # Prepare the debit transaction for the ledger
+    debit_transaction = {
+        'destroyed_token_id': token_id,
+        'confirmation_key': confirmation_key,
+        'date': datetime.datetime.now(),
+        'amount': amount,  # amount is positive store_ledger will handle the sign
+        'type': 'debit',
+        'description': f'Redeemed change of ${amount} USD'
+    }
 
-        # Update the user's ledger with the debit transaction
-        if store_ledger(phone_number, debit_transaction):
-            # Retrieve the updated ledger to get the new balance
-            updated_ledger = get_last_ledger_entry(phone_number)
-            new_balance = updated_ledger['balance'] if updated_ledger else "Error retrieving new balance"
+    new_balance = store_ledger(phone_number, debit_transaction)
 
-            # Delete the token since it's redeemed
-            remove_token(token_id)
-            
-            logging.info(f'Token redeemed: {token_id}')
-            logging.info(f'new ledger balance: {new_balance}')
-            
-            # Send confirmation SMS with the new balance
-            client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'Your change of ${change_amount}USD has been redeemed successfully.\nNew cutcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
-            
-            # Include the new balance in the JSON response
-            return jsonify({'message': 'Token used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
-        else:
-            return jsonify({'message': 'Failed to update ledger', 'validated': False}), 500
+    logging.info(f'new ledger balance: {new_balance}')
+    
+    # Send confirmation SMS with the new balance
+    client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew cutcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
+    
+    # Include the new balance in the JSON response
+    return jsonify({'message': 'Token used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
 
-    else:
-        logging.info(f'Invalid token: {token_id}')
-        return jsonify({'message': 'Invalid token', 'validated': False}), 400
+   
 
 
 

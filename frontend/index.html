@@ -46,12 +46,22 @@
       <button class="tab-button" onclick="changeTab('tab1')">ACCEPT CHANGE</button>
     </div>
     <div id="tab1" class="tab-content">
-      <input type="text" placeholder="token_id" class="border p-2 rounded w-full mb-4">
+      <div class="phone-input-container flex items-center border p-2 rounded w-full mb-4">
+        <input type="text" value="263" readonly class="border-none bg-transparent focus:outline-none" style="width: 40px;">
+        <input type="tel" placeholder="phone number" class="flex-1 border-none focus:ring-0" id="acceptphonenumber" oninput="validatePhoneNumber(this)">
+      </div>
+      <div class="input-container" style="position: relative; display: inline-block;">
+        <span style="position: absolute; left: 10px; top: 35%; transform: translateY(-50%);">$</span>
+        <input type="text" id="usechangeamountInput" placeholder="0.00" class="border p-2 rounded w-full mb-4 pl-8" oninput="validateInput(this)" />
+      </div>
       <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Accept Change</button>
       <div id="confirmationKey" class="mt-4 text-green-500"></div> <!-- Element to display the confirmation key -->
     </div>
     <div id="tab2" class="tab-content active">
-      <input type="text" placeholder="phone number" class="border p-2 rounded w-full mb-4">
+      <div class="phone-input-container flex items-center border p-2 rounded w-full mb-4">
+        <input type="text" value="263" readonly class="border-none bg-transparent focus:outline-none" style="width: 40px;">
+        <input type="tel" placeholder="phone number" class="flex-1 border-none focus:ring-0" oninput="validatePhoneNumber(this)">
+      </div>
       <div class="input-container" style="position: relative; display: inline-block;">
         <span style="position: absolute; left: 10px; top: 35%; transform: translateY(-50%);">$</span>
         <input type="text" id="amountInput" placeholder="0.00" class="border p-2 rounded w-full mb-4 pl-8" oninput="validateInput(this)" />
@@ -89,6 +99,10 @@
         input.value = value;
     }
   };
+
+  function validatePhoneNumber(input) {
+    input.value = input.value.replace(/[^0-9]/g, ''); // Allow only numbers
+  }
 
   function changeTab(tabName) {
     var i, tabcontent, tabbuttons;
@@ -128,7 +142,7 @@
 function createToken() {
     const phoneNumber = document.querySelector("[placeholder='phone number']").value;
     const changeAmount = document.querySelector("#amountInput").value;
-    const tuckshopId = "B"; // Example tuckshop ID
+   
 
     fetch('http://127.0.0.1:5000/create_token', {
         method: 'POST',
@@ -141,12 +155,13 @@ function createToken() {
 }
 
 function redeemToken() {
-    const tokenId = document.querySelector("[placeholder='token_id']").value;
+    const phoneNumber = document.querySelector("#acceptphonenumber").value;
+    const amount = document.querySelector("#usechangeamountInput").value;
 
     fetch('http://127.0.0.1:5000/redeem_token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token_id: tokenId })
+        body: JSON.stringify({ phone_number: phoneNumber, amount: amount})
     })
     .then(response => response.json())
     .then(data => {
