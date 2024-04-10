@@ -87,7 +87,7 @@ export default function Home() {
 
   return (
     <main
-      className={`flex h-screen w-screen flex-col items-center justify-center p-24`}
+      className={`flex h-screen w-screen flex-col items-center justify-center p-24 bg-zinc-100`}
     >
       <Dialog.Root open={isOpen} onOpenChange={onClose}>
         <Dialog.Trigger />
@@ -137,7 +137,7 @@ export default function Home() {
       <Head>
         <title>CUT Coin</title>
       </Head>
-      <div className=" rounded-xl border border-zinc-400/30 shadow-sm w-full max-w-md">
+      <div className=" rounded-xl border border-zinc-400/30 w-full max-w-md bg-white shadow-sm">
         <div className="flex gap-2 items-center px-8 py-4 border-b">
           <Image
             src="/coin.png"
