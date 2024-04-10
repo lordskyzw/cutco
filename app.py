@@ -65,7 +65,7 @@ def tx():
 
         store_token(token_id=token_id, token_info=token_info)
         new_balance = store_ledger(phone_number=phone_number, transaction=token_info)
-        logging.info(f"stored token and new balance is {new_balance}")
+        logging.info(f"stored token and new balance is: {new_balance}")
 
         if type(new_balance)==float:
             client.send_sms(source_number="CUTCoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nNew cutcoin balance: ${new_balance} USD')
@@ -185,4 +185,4 @@ def text_technician():
 
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000)

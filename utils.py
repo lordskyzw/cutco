@@ -68,6 +68,7 @@ def store_ledger(phone_number, transaction):
     If the ledger doesn't exist, create a new one. Returns the new balance after the update.
     """
     try:
+        #our bug lies in this try block
         query = {'phone_number': phone_number}
         update = {
             '$push': {'transactions': transaction},

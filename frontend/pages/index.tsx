@@ -55,7 +55,7 @@ export default function Home() {
       .join("");
 
     axios
-      .post("http://localhost:5000/tx", {
+      .post("http://127.0.0.1:5000/tx", {
         phone_number: "0" + phone_formatted,
         amount,
         transaction_type,
