@@ -60,7 +60,7 @@ export default function PhoneNumberInput(
         {props.name}
       </label>
       <div className="flex items-center border-2 rounded-xl border-zinc-400/10 group-focus-within:border-blue-500 group-focus-within:border-2 group-focus-within:shadow-sm overflow-hidden">
-        <p className="px-4 py-2 border-r inline-flex gap-2 h-full font-semibold text-zinc-700 group-focus-within:border-blue-500">
+        <p className="px-4 w-fit py-2 border-r inline-flex gap-2 h-full font-semibold text-zinc-700 group-focus-within:border-blue-500">
           <Flag code="zw" height="16" className="w-6" />
           +263
         </p>
@@ -73,7 +73,7 @@ export default function PhoneNumberInput(
             if (props.onChange) props.onChange(e);
           }}
           {...props}
-          className="p-2 outline-none w-full"
+          className="p-2 outline-none flex-1"
           placeholder="712 345 678"
         />
       </div>

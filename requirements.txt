@@ -3,3 +3,4 @@ flask-cors
 chromastone
 pymongo
 python-dotenv
+sklearn
