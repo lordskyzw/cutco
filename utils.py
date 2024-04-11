@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-mongo = MongoClient(host=os.environ.get("MONGO_URI"))
+mongo = MongoClient(host=str(os.environ.get("MONGO_URI")))
 db = mongo["cutcoin"]
 tokens_collection = db.tokens
 ledgers_collection = db.ledgers
