@@ -64,7 +64,7 @@ def tx():
         logging.info(f'Token generated: {token_id}\n Token Info: {token_info}')
 
         store_token(token_id=token_id, token_info=token_info)
-        new_balance = store_ledger(phone_number=phone_number, transaction=token_info)
+        new_balance = store_ledger(phone_number=phone_number, transaction=token_info) ### this is where the bug is
         logging.info(f"stored token and new balance is: {new_balance}")
 
         if type(new_balance)==float:
@@ -185,4 +185,4 @@ def text_technician():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=os.environ.get('PORT', 5000), debug=True)

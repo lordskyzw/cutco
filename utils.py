@@ -2,15 +2,16 @@ import hashlib
 from pymongo import MongoClient
 import os
 import re
+import logging
 from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
 
-mongo = MongoClient(host=str(os.environ.get("MONGO_URI")))
-db = mongo["cutcoin"]
-tokens_collection = db.tokens
-ledgers_collection = db.ledgers
+client = MongoClient(host=str(os.environ.get("MONGO_URI")))
+db = client["cutcoin"]
+
+
 
 def generate_token(tuckshop_id, phone_number, change_amount, current_time):
     '''Returns a token with the following format XY-01-Bg where:
@@ -50,6 +51,7 @@ def generate_token(tuckshop_id, phone_number, change_amount, current_time):
 
 def store_token(token_id, token_info):
     try:
+        tokens_collection = db.tokens
         tokens_collection.insert_one({'token_id': token_id, 'token_info': token_info})
         return True
     except Exception as e:
@@ -57,6 +59,7 @@ def store_token(token_id, token_info):
 
 def remove_token(token_id):
     try:
+        tokens_collection = db.tokens
         tokens_collection.delete({'token_id': token_id})
         return True
     except Exception as e:
@@ -67,16 +70,19 @@ def store_ledger(phone_number, transaction):
     Update the ledger for a given phone number by adding a new transaction and adjusting the balance.
     If the ledger doesn't exist, create a new one. Returns the new balance after the update.
     """
-    try:
-        #our bug lies in this try block
-        query = {'phone_number': phone_number}
-        update = {
-            '$push': {'transactions': transaction},
-            '$inc': {'balance': transaction['change_amount'] if transaction['type'] == 'credit' else -transaction['amount']}
-        }
+    
+    #our bug lies in this try block
+    query = {'phone_number': phone_number}
+    update = {
+        '$push': {'transactions': transaction},
+        '$inc': {'balance': transaction['change_amount'] if transaction['type'] == 'credit' else -transaction['amount']}
+    }
 
-        # Perform the update operation
+    # Perform the update operation
+    try:
+        ledgers_collection = db.ledgers
         result = ledgers_collection.update_one(query, update, upsert=True)
+        logging.info(f"result of update operation: {result}")
 
         if result.matched_count > 0 or result.upserted_id is not None:
             # If the ledger was successfully updated or created, retrieve the updated ledger to get the new balance
@@ -88,13 +94,15 @@ def store_ledger(phone_number, transaction):
         else:
             return "Update operation failed"  # Handle case where update operation didn't affect any documents
     except Exception as e:
-        return f"An error occurred: {e}"  # Return the error message
+        return f"Tarmica!!!!! An error occurred in utils.py in store_ledger function in the first try block lines 81-: {e}"  # Return the error message
 
 
     
 def get_last_ledger_entry(phone_number):
     try:
         # Retrieve the ledger document for the given phone number
+        ledgers_collection = db.ledgers
+        
         ledger_entry = ledgers_collection.find_one({'phone_number': phone_number})
 
         # Return the whole ledger entry as it contains the balance and all transactions
@@ -138,6 +146,7 @@ def token_info(token_id):
     """
     try:
         # Query the tokens collection for the token with the given token_id
+        tokens_collection = db.tokens
         token_data = tokens_collection.find_one({'token_id': token_id})
 
         # Check if the token was found
