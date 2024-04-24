@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from pymongo import MongoClient
 from utils import generate_token, store_token, remove_token, store_ledger, get_last_ledger_entry, format_phone_number, token_info
@@ -68,7 +68,7 @@ def tx():
         logging.info(f"stored token and new balance is: {new_balance}")
 
         if type(new_balance)==float:
-            client.send_sms(source_number="CUTCoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nNew cutcoin balance: ${new_balance} USD')
+            client.send_sms(source_number="Cut Coin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nNew cutcoin balance: ${new_balance} USD')
             logging.info(f'Token created: {token_id}')
             return jsonify({'tx_hash': token_id, 'tx_info': token_info, 'new_balance': new_balance}), 201
         
@@ -103,7 +103,7 @@ def tx():
         logging.info(f'new ledger balance: {new_balance}')
         
         # Send confirmation SMS with the new balance
-        client.send_sms(source_number="CUTCoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew cutcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
+        client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew cutcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
         
         # Include the new balance in the JSON response
         return jsonify({'message': f'Change of ${amount} USD used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
@@ -150,12 +150,68 @@ def redeem_token():
     logging.info(f'new ledger balance: {new_balance}')
     
     # Send confirmation SMS with the new balance
-    client.send_sms(source_number="CUTCoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew cutcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
+    client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew cutcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
     
     # Include the new balance in the JSON response
     return jsonify({'message': f'Change of ${amount} USD used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
 
    
+@app.route('/buy_airtime', methods=['POST'])
+def buy_airtime():
+    '''this endpoint receives the traffic from africastalking and processes the airtime purchase'''
+    data = request.form
+    # we need to extract the received data
+    session_id = request.values.get("sessionId", None)
+    service_code = request.values.get("serviceCode", None)
+    phone_number = request.values.get("phoneNumber", None)
+    text = request.values.get("text", "default")
+    if text == "":
+        response_text = "CON Welcome to hitcoin."
+        response_text += "1. Buy airtime\n"
+        response_text += "2. Check balance\n"
+        response_text += "3. Send hitcoin"
+    
+    elif text == "1":
+        response_text = "CON Enter the amount you want to buy"
+    elif text == "1*1":
+        response_text = "CON Enter the phone number"
+    elif text == "2":
+        last_ledger_entry = get_last_ledger_entry(phone_number)
+        old_balance = last_ledger_entry['balance']
+        response_text = f"END Your balance is {str(old_balance)}"
+    elif text == "3":
+        response_text = "CON Enter the phone number"
+    elif text == "3*1":
+        response_text = "CON Enter the amount you want to send"
+
+    
+    # Create a response object with text/plain content type
+    response = Response(response_text, content_type='text/plain')
+    return response
+    # #we then check if the phonenumber passed has enough balance to make the airtime purchase
+    # last_ledger_entry = get_last_ledger_entry(phone_number) #this is the last entry in the ledger
+    # old_balance = last_ledger_entry['balance']
+    # if old_balance < amount:
+    #     logging.info(f'Insufficient balance: {old_balance}')
+    #     return jsonify({'message': 'Insufficient balance', 'validated': False}), 400
+    # #if the user has enough balance we proceed to deduct the amount from the users balance
+    # token_id = last_ledger_entry['transactions'][-1]['token_id']
+    # confirmation_key = random.choice(string.ascii_uppercase)
+    # # Prepare the debit transaction for the ledger
+    # debit_transaction = {
+    #     'destroyed_token_id': token_id,
+    #     'confirmation_key': confirmation_key,
+    #     'date': datetime.datetime.now(),
+    #     'amount': amount,  # amount is positive store_ledger will handle the sign
+    #     'type': 'debit',
+    #     'description': f'Redeemed change of ${amount} USD'
+    # }
+
+    # new_balance = store_ledger(phone_number, debit_transaction)
+
+    # logging.info(f'new ledger balance: {new_balance}')
+    # #now we need to respond to the africastalking api with a success message
+    # return jsonify({'message': f'Change of ${amount} USD used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
 
 
 

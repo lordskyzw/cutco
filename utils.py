@@ -88,9 +88,9 @@ def store_ledger(phone_number, transaction):
             # If the ledger was successfully updated or created, retrieve the updated ledger to get the new balance
             updated_ledger = ledgers_collection.find_one(query)
             if updated_ledger:
-                return float(updated_ledger['balance'])  # Return the new balance
+                return float(updated_ledger['balance'])  # Return the new balance straight from the ledger
             else:
-                return "Error retrieving updated ledger"  # Handle potential error in retrieving the updated ledger
+                return "Error retrieving updated ledger, investigate db operation"
         else:
             return "Update operation failed"  # Handle case where update operation didn't affect any documents
     except Exception as e:
