@@ -163,10 +163,10 @@ def buy_airtime():
     # we need to extract the received data
     session_id = request.values.get("sessionId", None)
     service_code = request.values.get("serviceCode", None)
-    phone_number = request.values.get("phoneNumber", None)
+    phone_number = format_phone_number(request.values.get("phoneNumber", None))
     text = request.values.get("text", "default")
     if text == "":
-        response_text = "CON Welcome to hitcoin."
+        response_text = "CON Welcome to hitcoin.\n"
         response_text += "1. Buy airtime\n"
         response_text += "2. Check balance\n"
         response_text += "3. Send hitcoin"
@@ -176,9 +176,12 @@ def buy_airtime():
     elif text == "1*1":
         response_text = "CON Enter the phone number"
     elif text == "2":
-        last_ledger_entry = get_last_ledger_entry(phone_number)
-        old_balance = last_ledger_entry['balance']
-        response_text = f"END Your balance is {str(old_balance)}"
+        try:
+            last_ledger_entry = get_last_ledger_entry(phone_number)
+            old_balance = last_ledger_entry['balance']
+            response_text = f"END Your balance is {str(old_balance)}"
+        except Exception as e:
+            response_text = f"END Your balance is 0"
     elif text == "3":
         response_text = "CON Enter the phone number"
     elif text == "3*1":
