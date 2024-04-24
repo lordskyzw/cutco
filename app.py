@@ -205,7 +205,7 @@ def buy_airtime():
                     }
                     new_balance = store_ledger(originator_phone_number, debit_transaction)
                     response_text = f"END You have bought airtime worth ${amount} USD\nNew balance: ${new_balance} USD"
-                    #client.send_sms(source_number="$hitcoin", destination_number=phone_number, message=f'You have bought airtime worth ${amount}USD.\nNew hitcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
+                    #client.send_sms(source_number="$hitcoin", destination_number=originator_phone_number, message=f'You have bought airtime worth ${amount}USD.\nNew hitcoin balance: ${new_balance}USD')
             else:
                 response_text = "END Transaction cancelled"
 
