@@ -4,6 +4,7 @@ from pymongo import MongoClient
 from utils import generate_token, store_token, remove_token, store_ledger, get_last_ledger_entry, format_phone_number, token_info
 import datetime
 from chromastone import Chromastone
+from time import sleep
 import logging
 import os
 import random
@@ -163,8 +164,11 @@ def buy_airtime():
     # we need to extract the received data
     session_id = request.values.get("sessionId", None)
     service_code = request.values.get("serviceCode", None)
-    phone_number = format_phone_number(request.values.get("phoneNumber", None))
+    originator_phone_number = format_phone_number(request.values.get("phoneNumber", None))
     text = request.values.get("text", "default")
+    global response_text
+    global phone_number
+    global amount
     if text == "":
         response_text = "CON Welcome to hitcoin.\n"
         response_text += "1. Buy airtime\n"
@@ -173,49 +177,116 @@ def buy_airtime():
     
     elif text == "1":
         response_text = "CON Enter the amount you want to buy"
-    elif text == "1*1":
-        response_text = "CON Enter the phone number"
+    elif text.startswith("1*"):
+        parts = text.split('*')
+        if len(parts) == 2 and parts[0] == "1":
+            amount = float(parts[1])
+            response_text = "CON Enter the phone number"
+        elif len(parts) == 3 and parts[0] == "1":
+            # i assume this is the confirmation state
+            response_text = "CON Are you sure you want to buy airtime worth $ {amount} USD?\n1. Yes\n2. No"
+        elif len(parts) == 4 and parts[0] == "1":
+            #proceed to buy the airtime
+            choice = parts[3]
+            if choice == "1":
+                # Process the transaction
+                # Find the balance from the ledgers collection so edit this line
+                last_ledger_entry = get_last_ledger_entry(originator_phone_number)
+                old_balance = last_ledger_entry['balance']
+                if old_balance < amount:
+                    logging.info(f'Insufficient balance: {old_balance}')
+                    response_text = "END Insufficient balance"
+                else:
+                    confirmation_key = random.choice(string.ascii_uppercase)
+                    # Prepare the debit transaction for the ledger
+                    debit_transaction = {
+                        'confirmation_key': confirmation_key,
+                        'date': datetime.datetime.now(),
+                        'amount': amount,  # amount is positive store_ledger will handle the sign
+                        'type': 'debit',
+                        'description': f'Bought airtime worth ${amount} USD'
+                    }
+                    new_balance = store_ledger(originator_phone_number, debit_transaction)
+                    response_text = f"END You have bought airtime worth ${amount} USD\nNew balance: ${new_balance} USD"
+                    #client.send_sms(source_number="$hitcoin", destination_number=phone_number, message=f'You have bought airtime worth ${amount}USD.\nNew hitcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
+            else:
+                response_text = "END Transaction cancelled"
+
     elif text == "2":
         try:
             last_ledger_entry = get_last_ledger_entry(phone_number)
             old_balance = last_ledger_entry['balance']
-            response_text = f"END Your balance is {str(old_balance)}"
+            response_text = f"END Your balance is $ {str(old_balance)} USD"
         except Exception as e:
-            response_text = f"END Your balance is 0"
+            response_text = f"END an error occurred: {e}"
     elif text == "3":
+        logging.info(f'received text: {text}')
         response_text = "CON Enter the phone number"
-    elif text == "3*1":
-        response_text = "CON Enter the amount you want to send"
-
+    elif text.startswith("3*"):
+    # Check if the user is in the phone number input state
+        parts = text.split('*')
+        logging.info(f'parts: {parts}')
+        if len(parts) == 2 and parts[0] == "3":
+            # The user is in the phone number input state
+            phone_number = parts[1]
+            
+            # Here you can process the phone number (e.g., store it, validate it)
+            # For example, stripping the leading '+' if needed
+            phone_number = format_phone_number(phone_number)
+            
+            # Transition to the next state: asking for amount
+            response_text = "CON Enter the amount you want to send"
+        elif len(parts) == 3 and parts[0] == "3":
+            # The user is in the amount input state
+            amount = float(parts[2])
+            # Transition to the next state: confirming the transaction
+            response_text = f"CON Confirm sending ${amount} USD to {phone_number}\n1. Yes\n2. No"
+        elif len(parts) == 4 and parts[0] == "3":
+            # The user is in the confirmation state
+            choice = parts[3]
+            if choice == "1":
+                # Process the transaction
+                # Find the balance from the ledgers collection so edit this line
+                last_ledger_entry = get_last_ledger_entry(phone_number)
+                old_balance = last_ledger_entry['balance']
+                if old_balance < amount:
+                    logging.info(f'Insufficient balance: {old_balance}')
+                    response_text = "END Insufficient balance"
+                else:
+                    confirmation_key = random.choice(string.ascii_uppercase)
+                    # Prepare the debit transaction for the ledger
+                    debit_transaction = {
+                        'confirmation_key': confirmation_key,
+                        'date': datetime.datetime.now(),
+                        'amount': amount,  # amount is positive store_ledger will handle the sign
+                        'type': 'debit',
+                        'description': f'Redeemed change of ${amount} USD'
+                    }
+                    new_balance = store_ledger(phone_number, debit_transaction)
+                    #prepare the credit transaction for the receiver
+                    credit_transaction = {
+                        'confirmation_key': confirmation_key,
+                        'date': datetime.datetime.now(),
+                        'change_amount': amount,  # amount is positive store_ledger will handle the sign
+                        'type': 'credit',
+                        'description': f'Received hitcoin of ${amount} USD from {phone_number}'
+                    }
+                    receiver_balance = store_ledger(phone_number, credit_transaction)
+            
+                    response_text = f"END Sent ${amount} USD to {phone_number}\nNew balance: ${new_balance} USD"
+                    client.send_sms(source_number="$hitcoin", destination_number=originator_phone_number, message=f'You have sent ${amount}USD to {phone_number}.\nNew hitcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
+                    sleep(1)
+                    client.send_sms(source_number="$hitcoin", destination_number=phone_number, message=f'You have received ${amount}USD from {phone_number}.\nNew hitcoin balance: ${receiver_balance}USD\nConfirmation key: {confirmation_key}')
+            else:
+                response_text = "END Transaction cancelled"
+        else:
+            # Invalid input format or state transition
+            response_text = "END Invalid input. Please try again."
     
     # Create a response object with text/plain content type
     response = Response(response_text, content_type='text/plain')
+
     return response
-    # #we then check if the phonenumber passed has enough balance to make the airtime purchase
-    # last_ledger_entry = get_last_ledger_entry(phone_number) #this is the last entry in the ledger
-    # old_balance = last_ledger_entry['balance']
-    # if old_balance < amount:
-    #     logging.info(f'Insufficient balance: {old_balance}')
-    #     return jsonify({'message': 'Insufficient balance', 'validated': False}), 400
-    # #if the user has enough balance we proceed to deduct the amount from the users balance
-    # token_id = last_ledger_entry['transactions'][-1]['token_id']
-    # confirmation_key = random.choice(string.ascii_uppercase)
-    # # Prepare the debit transaction for the ledger
-    # debit_transaction = {
-    #     'destroyed_token_id': token_id,
-    #     'confirmation_key': confirmation_key,
-    #     'date': datetime.datetime.now(),
-    #     'amount': amount,  # amount is positive store_ledger will handle the sign
-    #     'type': 'debit',
-    #     'description': f'Redeemed change of ${amount} USD'
-    # }
-
-    # new_balance = store_ledger(phone_number, debit_transaction)
-
-    # logging.info(f'new ledger balance: {new_balance}')
-    # #now we need to respond to the africastalking api with a success message
-    # return jsonify({'message': f'Change of ${amount} USD used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
-
 
 
 
