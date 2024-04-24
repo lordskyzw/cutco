@@ -184,7 +184,7 @@ def buy_airtime():
             response_text = "CON Enter the phone number"
         elif len(parts) == 3 and parts[0] == "1":
             # i assume this is the confirmation state
-            response_text = "CON Are you sure you want to buy airtime worth $ {amount} USD?\n1. Yes\n2. No"
+            response_text = f"CON Are you sure you want to buy airtime worth $ {amount} USD?\n1. Yes\n2. No"
         elif len(parts) == 4 and parts[0] == "1":
             #proceed to buy the airtime
             choice = parts[3]
