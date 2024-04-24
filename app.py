@@ -181,13 +181,10 @@ def buy_airtime():
         parts = text.split('*')
         if len(parts) == 2 and parts[0] == "1":
             amount = float(parts[1])
-            response_text = "CON Enter the phone number"
-        elif len(parts) == 3 and parts[0] == "1":
-            # i assume this is the confirmation state
             response_text = f"CON Are you sure you want to buy airtime worth $ {amount} USD?\n1. Yes\n2. No"
-        elif len(parts) == 4 and parts[0] == "1":
+        elif len(parts) == 3 and parts[0] == "1":
             #proceed to buy the airtime
-            choice = parts[3]
+            choice = parts[2]
             if choice == "1":
                 # Process the transaction
                 # Find the balance from the ledgers collection so edit this line
