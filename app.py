@@ -173,7 +173,8 @@ def buy_airtime():
         response_text = "CON Welcome to hitcoin.\n"
         response_text += "1. Buy airtime\n"
         response_text += "2. Check balance\n"
-        response_text += "3. Send hitcoin"
+        response_text += "3. Send hitcoin\n"
+        response_text += "4. Register for hitcoin"
     
     elif text == "1":
         response_text = "CON Enter the amount you want to buy"
@@ -205,7 +206,7 @@ def buy_airtime():
                     }
                     new_balance = store_ledger(originator_phone_number, debit_transaction)
                     response_text = f"END You have bought airtime worth ${amount} USD\nNew balance: ${new_balance} USD"
-                    #client.send_sms(source_number="$hitcoin", destination_number=originator_phone_number, message=f'You have bought airtime worth ${amount}USD.\nNew hitcoin balance: ${new_balance}USD')
+                    client.send_sms(source_number="$hitcoin", destination_number=originator_phone_number, message=f'You have bought airtime worth ${amount}USD.\nNew hitcoin balance: ${new_balance}USD')
             else:
                 response_text = "END Transaction cancelled"
 
@@ -214,6 +215,7 @@ def buy_airtime():
             last_ledger_entry = get_last_ledger_entry(phone_number)
             old_balance = last_ledger_entry['balance']
             response_text = f"END Your balance is $ {str(old_balance)} USD"
+            client.send_sms(source_number="$hitcoin", destination_number=originator_phone_number, message=f'Your hitcoin balance is ${old_balance}USD')
         except Exception as e:
             response_text = f"END an error occurred: {e}"
     elif text == "3":
@@ -226,13 +228,12 @@ def buy_airtime():
         if len(parts) == 2 and parts[0] == "3":
             # The user is in the phone number input state
             phone_number = parts[1]
-            
-            # Here you can process the phone number (e.g., store it, validate it)
-            # For example, stripping the leading '+' if needed
             phone_number = format_phone_number(phone_number)
-            
-            # Transition to the next state: asking for amount
-            response_text = "CON Enter the amount you want to send"
+            logging.info(f'formatted phone number: {phone_number}')
+            if phone_number == 'invalid phone number':
+                response_text = "END Invalid phone number. Please try again."
+            else:
+                response_text = "CON Enter the amount you want to send"
         elif len(parts) == 3 and parts[0] == "3":
             # The user is in the amount input state
             amount = float(parts[2])
@@ -245,6 +246,7 @@ def buy_airtime():
                 # Process the transaction
                 # Find the balance from the ledgers collection so edit this line
                 last_ledger_entry = get_last_ledger_entry(phone_number)
+                logging.info(f'last_ledger_entry: {last_ledger_entry}')
                 old_balance = last_ledger_entry['balance']
                 if old_balance < amount:
                     logging.info(f'Insufficient balance: {old_balance}')
@@ -276,6 +278,29 @@ def buy_airtime():
                     client.send_sms(source_number="$hitcoin", destination_number=phone_number, message=f'You have received ${amount}USD from {phone_number}.\nNew hitcoin balance: ${receiver_balance}USD\nConfirmation key: {confirmation_key}')
             else:
                 response_text = "END Transaction cancelled"
+        elif response_text == "4":
+            #check if the phone number exists in the ledger already and if not, add a ledger with a 0 balance and return a registration message
+            last_ledger_entry = get_last_ledger_entry(phone_number)
+            if last_ledger_entry:
+                response_text = "END You are already registered for hitcoin"
+            else:
+                #add a new ledger entry with a 0 balance
+                new_ledger_entry = {
+                    'phone_number': phone_number,
+                    'balance': 0,
+                    'transactions': []
+                }
+                try:
+                    ledgers_collection = db.ledgers
+                    result = ledgers_collection.insert_one(new_ledger_entry)
+                    if result.inserted_id:
+                        response_text = "END You have been registered for hitcoin"
+                    else:
+                        response_text = "END Error registering for hitcoin"
+                except Exception as e:
+                    response_text = f"END An error occurred: {e}"
+
+
         else:
             # Invalid input format or state transition
             response_text = "END Invalid input. Please try again."
