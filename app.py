@@ -263,7 +263,7 @@ def buy_airtime():
                         'type': 'debit',
                         'description': f'Redeemed change of ${amount} USD'
                     }
-                    new_balance = store_ledger(phone_number, debit_transaction)
+                    new_balance = store_ledger(originator_phone_number, debit_transaction)
                     #prepare the credit transaction for the receiver
                     credit_transaction = {
                         'confirmation_key': confirmation_key,

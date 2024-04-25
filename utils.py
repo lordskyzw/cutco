@@ -65,7 +65,8 @@ def remove_token(token_id):
 def store_ledger(phone_number, transaction):
     """
     Update the ledger for a given phone number by adding a new transaction and adjusting the balance.
-    If the ledger doesn't exist, create a new one. Returns the new balance after the update.
+    If the ledger doesn't exist, create a new one. 
+    Returns the new balance after the update.
     """
     
     #our bug lies in this try block
