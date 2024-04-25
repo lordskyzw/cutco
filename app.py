@@ -282,7 +282,7 @@ def buy_airtime():
                     client.send_sms(source_number="$hitcoin", destination_number=phone_number, message=f'You have received ${amount}USD from {phone_number}.\nNew hitcoin balance: ${receiver_balance}USD\nConfirmation key: {confirmation_key}')
             else:
                 response_text = "END Transaction cancelled"
-    elif response_text == "4":
+    elif text == "4":
         #check if the phone number exists in the ledger already and if not, add a ledger with a 0 balance and return a registration message
         logging.info(f'trying to register phone number: {originator_phone_number}')
         last_ledger_entry = get_last_ledger_entry(originator_phone_number)
