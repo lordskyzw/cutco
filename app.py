@@ -69,7 +69,7 @@ def tx():
         logging.info(f"stored token and new balance is: {new_balance}")
 
         if type(new_balance)==float:
-            client.send_sms(source_number="Cut Coin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nNew cutcoin balance: ${new_balance} USD')
+            client.send_sms(source_number="$hitcoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nNew hitcoin balance: ${new_balance} USD')
             logging.info(f'Token created: {token_id}')
             return jsonify({'tx_hash': token_id, 'tx_info': token_info, 'new_balance': new_balance}), 201
         
@@ -104,7 +104,7 @@ def tx():
         logging.info(f'new ledger balance: {new_balance}')
         
         # Send confirmation SMS with the new balance
-        client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew cutcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
+        client.send_sms(source_number="$hitcoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew hitcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
         
         # Include the new balance in the JSON response
         return jsonify({'message': f'Change of ${amount} USD used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
@@ -151,7 +151,7 @@ def redeem_token():
     logging.info(f'new ledger balance: {new_balance}')
     
     # Send confirmation SMS with the new balance
-    client.send_sms(source_number="$cutcoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew cutcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
+    client.send_sms(source_number="$hitcoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew hitcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
     
     # Include the new balance in the JSON response
     return jsonify({'message': f'Change of ${amount} USD used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
@@ -211,7 +211,7 @@ def buy_airtime():
                 response_text = "END Transaction cancelled"
     elif text == "2":
         try:
-            last_ledger_entry = get_last_ledger_entry(phone_number)
+            last_ledger_entry = get_last_ledger_entry(originator_phone_number)
             old_balance = last_ledger_entry['balance']
             response_text = f"END Your balance is $ {str(old_balance)} USD"
             client.send_sms(source_number="$hitcoin", destination_number=originator_phone_number, message=f'Your hitcoin balance is ${old_balance}USD')
