@@ -164,6 +164,7 @@ def buy_airtime():
     # we need to extract the received data
     session_id = request.values.get("sessionId", None)
     service_code = request.values.get("serviceCode", None)
+    global originator_phone_number
     originator_phone_number = format_phone_number(request.values.get("phoneNumber", None))
     text = request.values.get("text", "default")
     global response_text
@@ -247,7 +248,7 @@ def buy_airtime():
             # The user is in the confirmation state
             choice = parts[3]
             if choice == "1":
-                last_ledger_entry = get_last_ledger_entry(phone_number)
+                last_ledger_entry = get_last_ledger_entry(originator_phone_number)
                 old_balance = last_ledger_entry['balance']
                 if old_balance < amount:
                     logging.info(f'Insufficient balance: {old_balance}')
