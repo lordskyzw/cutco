@@ -247,10 +247,7 @@ def buy_airtime():
             # The user is in the confirmation state
             choice = parts[3]
             if choice == "1":
-                # Process the transaction
-                # Find the balance from the ledgers collection so edit this line
                 last_ledger_entry = get_last_ledger_entry(phone_number)
-                logging.info(f'last_ledger_entry: {last_ledger_entry}')
                 old_balance = last_ledger_entry['balance']
                 if old_balance < amount:
                     logging.info(f'Insufficient balance: {old_balance}')
@@ -284,7 +281,6 @@ def buy_airtime():
                 response_text = "END Transaction cancelled"
     elif text == "4":
         #check if the phone number exists in the ledger already and if not, add a ledger with a 0 balance and return a registration message
-        logging.info(f'trying to register phone number: {originator_phone_number}')
         last_ledger_entry = get_last_ledger_entry(originator_phone_number)
         if last_ledger_entry:
             response_text = "END You are already registered for hitcoin"
