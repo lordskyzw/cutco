@@ -1,10 +1,8 @@
-import hashlib
 from pymongo import MongoClient
 import os
-import re
-import logging
-from datetime import datetime
 from dotenv import load_dotenv
+import hashlib
+import re
 
 load_dotenv()
 
@@ -19,8 +17,7 @@ def generate_token(tuckshop_id, phone_number, change_amount, current_time):
     01 are the third and fourth integers found in the hex digest.
     B is a constant indicating tuckshop of origin, in this case tuckshop B.
     g is the first lowercase letter found in the hex digest.'''
-    import hashlib
-    import re
+    
     
     # Create the hasher and generate the hash
     hasher = hashlib.sha256()
@@ -82,7 +79,6 @@ def store_ledger(phone_number, transaction):
     try:
         ledgers_collection = db.ledgers
         result = ledgers_collection.update_one(query, update, upsert=True)
-        logging.info(f"result of update operation: {result}")
 
         if result.matched_count > 0 or result.upserted_id is not None:
             # If the ledger was successfully updated or created, retrieve the updated ledger to get the new balance
