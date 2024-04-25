@@ -285,13 +285,13 @@ def buy_airtime():
                 response_text = "END Transaction cancelled"
         elif response_text == "4":
             #check if the phone number exists in the ledger already and if not, add a ledger with a 0 balance and return a registration message
-            last_ledger_entry = get_last_ledger_entry(phone_number)
+            last_ledger_entry = get_last_ledger_entry(originator_phone_number)
             if last_ledger_entry:
                 response_text = "END You are already registered for hitcoin"
             else:
                 #add a new ledger entry with a 0 balance
                 new_ledger_entry = {
-                    'phone_number': phone_number,
+                    'phone_number': originator_phone_number,
                     'balance': 0,
                     'transactions': []
                 }
