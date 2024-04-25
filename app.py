@@ -229,11 +229,16 @@ def buy_airtime():
             # The user is in the phone number input state
             phone_number = parts[1]
             phone_number = format_phone_number(phone_number)
-            logging.info(f'formatted phone number: {phone_number}')
-            if phone_number == 'invalid phone number':
-                response_text = "END Invalid phone number. Please try again."
+            # check if phone number exists in the ledger, if not, return that the user is not registered
+            last_ledger_entry = get_last_ledger_entry(phone_number)
+            if not last_ledger_entry:
+                response_text = "END The phone number you are trying to send hitcoin to is not registered for hitcoin. Please ask them to register first"
             else:
-                response_text = "CON Enter the amount you want to send"
+                logging.info(f'formatted phone number: {phone_number}')
+                if phone_number == 'invalid phone number':
+                    response_text = "END Invalid phone number. Please try again."
+                else:
+                    response_text = "CON Enter the amount you want to send"
         elif len(parts) == 3 and parts[0] == "3":
             # The user is in the amount input state
             amount = float(parts[2])
