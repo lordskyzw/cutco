@@ -209,7 +209,6 @@ def buy_airtime():
                     client.send_sms(source_number="$hitcoin", destination_number=originator_phone_number, message=f'You have bought airtime worth ${amount}USD.\nNew hitcoin balance: ${new_balance}USD')
             else:
                 response_text = "END Transaction cancelled"
-
     elif text == "2":
         try:
             last_ledger_entry = get_last_ledger_entry(phone_number)
@@ -283,32 +282,31 @@ def buy_airtime():
                     client.send_sms(source_number="$hitcoin", destination_number=phone_number, message=f'You have received ${amount}USD from {phone_number}.\nNew hitcoin balance: ${receiver_balance}USD\nConfirmation key: {confirmation_key}')
             else:
                 response_text = "END Transaction cancelled"
-        elif response_text == "4":
-            #check if the phone number exists in the ledger already and if not, add a ledger with a 0 balance and return a registration message
-            last_ledger_entry = get_last_ledger_entry(originator_phone_number)
-            if last_ledger_entry:
-                response_text = "END You are already registered for hitcoin"
-            else:
-                #add a new ledger entry with a 0 balance
-                new_ledger_entry = {
-                    'phone_number': originator_phone_number,
-                    'balance': 0,
-                    'transactions': []
-                }
-                try:
-                    ledgers_collection = db.ledgers
-                    result = ledgers_collection.insert_one(new_ledger_entry)
-                    if result.inserted_id:
-                        response_text = "END You have been registered for hitcoin"
-                    else:
-                        response_text = "END Error registering for hitcoin"
-                except Exception as e:
-                    response_text = f"END An error occurred: {e}"
-
-
+    elif response_text == "4":
+        #check if the phone number exists in the ledger already and if not, add a ledger with a 0 balance and return a registration message
+        logging.info(f'trying to register phone number: {originator_phone_number}')
+        last_ledger_entry = get_last_ledger_entry(originator_phone_number)
+        if last_ledger_entry:
+            response_text = "END You are already registered for hitcoin"
         else:
-            # Invalid input format or state transition
-            response_text = "END Invalid input. Please try again."
+            #add a new ledger entry with a 0 balance
+            new_ledger_entry = {
+                'phone_number': originator_phone_number,
+                'balance': 0,
+                'transactions': []
+            }
+            try:
+                ledgers_collection = db.ledgers
+                result = ledgers_collection.insert_one(new_ledger_entry)
+                if result.inserted_id:
+                    response_text = "END You have been registered for hitcoin"
+                else:
+                    response_text = "END Error registering for hitcoin"
+            except Exception as e:
+                response_text = f"END An error occurred: {e}"
+    else:
+        # Invalid input format or state transition
+        response_text = "END Invalid input. Please try again."
     
     # Create a response object with text/plain content type
     response = Response(response_text, content_type='text/plain')
