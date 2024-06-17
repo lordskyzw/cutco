@@ -193,7 +193,7 @@ function createToken() {
   // Retrieve the change amount from the input field with ID 'amountInput'
   const changeAmount = document.getElementById("amountInput").value;
 
-  fetch('http://127.0.0.1:5000/tx', {
+  fetch('https://cutcoin.up.railway.app/tx', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({phone_number: phoneNumber, amount: changeAmount})
@@ -208,7 +208,7 @@ function redeemToken() {
     const phoneNumber = document.querySelector("#acceptphonenumber").value;
     const amount = document.querySelector("#usechangeamountInput").value;
 
-    fetch('http://127.0.0.1:5000/use_change', {
+    fetch('https://cutcoin.up.railway.app/use_change', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone_number: phoneNumber, amount: amount})
@@ -233,7 +233,7 @@ function redeemToken() {
 }
 
 function availableTokens() {
-    fetch('http://127.0.0.1:5000/available_tokens')
+    fetch('https://cutcoin.up.railway.app/available_tokens')
     .then(response => response.json())
     .then(data => {
         const tokensDisplay = document.querySelector("#tokensDisplay");
@@ -246,7 +246,7 @@ function availableTokens() {
 }
 
 function textTechnician() {
-    fetch('http://127.0.0.1:5000/text_technician')
+    fetch('https://cutcoin.up.railway.app/text_technician')
     .then(response => response.json())
     .then(data => console.log(data.message))
     .catch(error => console.error('Error:', error));
