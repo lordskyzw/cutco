@@ -1,7 +1,7 @@
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, make_response
 from flask_cors import CORS
 from pymongo import MongoClient
-from utils import generate_token, store_token, remove_token, store_ledger, get_last_ledger_entry, format_phone_number, token_info
+from utils import generate_token, store_token, store_ledger, get_last_ledger_entry, format_phone_number, token_info
 import datetime
 from chromastone import Chromastone
 from time import sleep
@@ -9,6 +9,10 @@ import logging
 import os
 import random
 import string
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import io
+
 from dotenv import load_dotenv
 
 
@@ -69,7 +73,7 @@ def tx():
         logging.info(f"stored token and new balance is: {new_balance}")
 
         if type(new_balance)==float:
-            client.send_sms(source_number="$hitcoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nNew hitcoin balance: ${new_balance} USD')
+            client.send_sms(source_number="cutcoin", destination_number=phone_number, message=f'You have received: ${change_amount}USD\nFrom TuckShop: {TUCKSHOP_ID}\nNew hitcoin balance: ${new_balance} USD')
             logging.info(f'Token created: {token_id}')
             return jsonify({'tx_hash': token_id, 'tx_info': token_info, 'new_balance': new_balance}), 201
         
@@ -104,7 +108,7 @@ def tx():
         logging.info(f'new ledger balance: {new_balance}')
         
         # Send confirmation SMS with the new balance
-        client.send_sms(source_number="$hitcoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew hitcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
+        client.send_sms(source_number="cutcoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew hitcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
         
         # Include the new balance in the JSON response
         return jsonify({'message': f'Change of ${amount} USD used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
@@ -112,6 +116,37 @@ def tx():
     else:
         logging.error(f'invalid or missing transaction type')
         return jsonify({'message': f'invalid or missing transaction type: deposit or withdrawal'})
+
+
+@app.route('/view_all_transactions', methods=['POST'])
+def view_all_transactions():
+    '''
+    this endpoint accepts a phone number in the request, formats it into the 263*** format
+    It then proceeds to look up in the ledgers db to find if any ledger of that phone number exists
+    If so, it returns the transactions in a json format, before making them into a pdf and returning them to the frontend
+    if not, then it returns a no transaction response, in which case the frontend can just display a no transactions alert'''
+    phone_number = request.get_json().get('phone_number')
+    ledger = get_last_ledger_entry(phone_number=phone_number)
+    if ledger is None:
+        return jsonify({'message': 'No Transaction exists'}), 400
+    else:
+        # Process the transactions to be JSON serializable
+        transactions = ledger.get('transactions', [])
+        processed_transactions = []
+        for transaction in transactions:
+            processed_transaction = {
+                'date': transaction['date'].strftime('%Y-%m-%d %H:%M:%S'),
+                'amount': transaction.get('amount') or transaction.get('change_amount', 'N/A'),
+                'type': transaction.get('type', 'N/A'),
+                'description': transaction.get('description', 'No description provided')
+            }
+            processed_transactions.append(processed_transaction)
+
+        return jsonify({
+            'phone_number': ledger['phone_number'],
+            'balance': ledger['balance'],
+            'transactions': processed_transactions
+        }), 200
 
 
 @app.route('/use_change', methods=['POST'])
@@ -126,7 +161,7 @@ def redeem_token():
     phone_number = request.json.get('phone_number')
     amount = float(request.json.get('amount'))
 
-    # Find the balance from the ledgers collection so edit this line
+
     last_ledger_entry = get_last_ledger_entry(phone_number)
     old_balance = last_ledger_entry['balance']
 
@@ -151,7 +186,7 @@ def redeem_token():
     logging.info(f'new ledger balance: {new_balance}')
     
     # Send confirmation SMS with the new balance
-    client.send_sms(source_number="$hitcoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew hitcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
+    client.send_sms(source_number="cutcoin", destination_number=phone_number, message=f'You have used ${amount}USD at Tuckshop:{TUCKSHOP_ID}.\nNew hitcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
     
     # Include the new balance in the JSON response
     return jsonify({'message': f'Change of ${amount} USD used successfully', 'confirmation_key': confirmation_key, 'new_balance': new_balance, 'validated': True}), 200
@@ -207,7 +242,7 @@ def buy_airtime():
                     }
                     new_balance = store_ledger(originator_phone_number, debit_transaction)
                     response_text = f"END You have bought airtime worth ${amount} USD\nNew balance: ${new_balance} USD"
-                    client.send_sms(source_number="$hitcoin", destination_number=originator_phone_number, message=f'You have bought airtime worth ${amount}USD.\nNew hitcoin balance: ${new_balance}USD')
+                    client.send_sms(source_number="cutcoin", destination_number=originator_phone_number, message=f'You have bought airtime worth ${amount}USD.\nNew hitcoin balance: ${new_balance}USD')
             else:
                 response_text = "END Transaction cancelled"
     elif text == "2":
@@ -215,7 +250,7 @@ def buy_airtime():
             last_ledger_entry = get_last_ledger_entry(originator_phone_number)
             old_balance = last_ledger_entry['balance']
             response_text = f"END Your balance is $ {str(old_balance)} USD"
-            client.send_sms(source_number="$hitcoin", destination_number=originator_phone_number, message=f'Your hitcoin balance is ${old_balance}USD')
+            client.send_sms(source_number="cutcoin", destination_number=originator_phone_number, message=f'Your hitcoin balance is ${old_balance}USD')
         except Exception as e:
             response_text = f"END an error occurred: {e}"
     elif text == "3":
@@ -275,9 +310,9 @@ def buy_airtime():
                     receiver_balance = store_ledger(phone_number, credit_transaction)
             
                     response_text = f"END Sent ${amount} USD to {phone_number}\nNew balance: ${new_balance} USD"
-                    client.send_sms(source_number="$hitcoin", destination_number=originator_phone_number, message=f'You have sent ${amount}USD to {phone_number}.\nNew hitcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
+                    client.send_sms(source_number="cutcoin", destination_number=originator_phone_number, message=f'You have sent ${amount}USD to {phone_number}.\nNew hitcoin balance: ${new_balance}USD\nConfirmation key: {confirmation_key}')
                     sleep(1)
-                    client.send_sms(source_number="$hitcoin", destination_number=phone_number, message=f'You have received ${amount}USD from {phone_number}.\nNew hitcoin balance: ${receiver_balance}USD\nConfirmation key: {confirmation_key}')
+                    client.send_sms(source_number="cutcoin", destination_number=phone_number, message=f'You have received ${amount}USD from {phone_number}.\nNew hitcoin balance: ${receiver_balance}USD\nConfirmation key: {confirmation_key}')
             else:
                 response_text = "END Transaction cancelled"
     elif text == "4":

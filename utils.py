@@ -105,7 +105,7 @@ def get_last_ledger_entry(phone_number):
         # Return the whole ledger entry as it contains the balance and all transactions
         return ledger_entry
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"An error occurred while running `get_last_ledger_entry({phone_number})` in utils.py line 98: {e}")
         return None  # It's better to return None than False to distinguish between an error and a missing entry
 
     
